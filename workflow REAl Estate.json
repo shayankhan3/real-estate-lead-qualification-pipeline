@@ -1,0 +1,462 @@
+{
+  "name": "1\\",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "c5bf3295-f2e6-4bd0-93db-dc2752f76897",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "fa830b76-4a75-404d-9e85-59304c7cb94c",
+      "name": "Webhook",
+      "webhookId": "c5bf3295-f2e6-4bd0-93db-dc2752f76897"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.data.message.conversation ?? $json.data.message.extendedTextMessage.text }}",
+        "options": {
+          "systemMessage": "=Tu SkyLine Properties ka friendly AI assistant hai. Tera naam \"Sky\" hai.\n\nCONVERSATION FLOW:\n1. Pehli message pe hamesha warm greeting karo aur poochho kya help chahiye\n2. Phir naturally ek ek karke collect karo:\n   - Budget range (PKR mein)\n   - Preferred location (Bahria Town, DHA, Gulshan, etc.)\n   - Timeline (kab khareedna/kiraaye pe lena chahte hain)\n\nIMPORTANT RULES:\n- Pehle greet karo, KABHI seedha budget mat poochho\n- Jo info user pehle de chuka hai dobara mat poochho\n- Ek waqt mein sirf EK sawaal poochho\n- Friendly aur professional raho\n- Jawab short rakho (2-3 lines max)\n- Urdu/Hinglish mein baat karo jab tak user English na kare\n\nGREETING EXAMPLE:\n\"Assalam o Alaikum! 😊 Main Sky hoon, SkyLine Properties ka assistant.\nAapki property dhundhne mein madad karunga. Aap khareedna chahte hain ya kiraye pe lena?\"\n\nQUALIFICATION (jab teeno mil jayein):\n- High Priority: Budget > 1Cr + clear timeline\n- Medium Priority: Budget clear, timeline flexible\n- Low Priority: Sirf explore kar raha hai\n\nJab budget, location, aur timeline teeno mil jayein to\nSIRF ye JSON return karo, kuch aur mat likho:\n{\n  \"qualified\": true,\n  \"lead_name\": \"<pushName>\",\n  \"budget\": \"<user ka budget>\",\n  \"location\": \"<user ki location>\",\n  \"timeline\": \"<user ka timeline>\",\n  \"status\": \"<High-Priority/Medium-Priority/Low-Priority>\"\n}\n\nAgar abhi teeno nahi mile to normal conversational message return karo."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        448,
+        -80
+      ],
+      "id": "79482bf9-f339-4488-bacb-54fcd47bcdb9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        368,
+        240
+      ],
+      "id": "0e6cca81-4e40-44c9-be10-2c7f0367ab57",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "92osgGllYiZgcCXa",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3f73c68a-aeac-40b2-b98b-35ecb1e2231f",
+              "leftValue": "={{ $json.body.data.message.conversation }}",
+              "rightValue": "conversation ",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "94f99433-22d3-4371-9e85-911db782aca9",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8080/message/sendText/client%201",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "2FD249CA8DF7-4E5C-94C3-12AC4A2A2EA0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook').item.json.body.data.key.remoteJid }}"
+            },
+            {
+              "name": "text",
+              "value": "=Shukriya {{ $('Code in JavaScript').item.json.lead_name }}! \n\nAapki inquiry register ho gayi hai.\nBudget: {{ $('Code in JavaScript').item.json.budget }}\nLocation: {{ $('Code in JavaScript').item.json.location }}\n\nHamara agent jald aapse rabta karega. "
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1264,
+        48
+      ],
+      "id": "8f92e708-a248-4ff9-804c-a61de6c1728d",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bd096911-d89a-417b-8b15-b74bc71efafa",
+              "leftValue": "={{ $json.output }} ",
+              "rightValue": "\"qualified\": true",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        848,
+        -32
+      ],
+      "id": "9a50c766-b7f6-4464-95de-3c67d882029b",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.item.json.output;\nconst jsonMatch = output.match(/\\{[\\s\\S]*\\}/);\nconst parsed = JSON.parse(jsonMatch[0]);\n\nreturn {\n  lead_name: parsed.lead_name,\n  budget: parsed.budget,\n  location: parsed.location,\n  timeline: parsed.timeline,\n  status: parsed.status,\n  phone: $('Webhook').item.json.body.data.key.remoteJid,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        -32
+      ],
+      "id": "a7bd95f9-8171-47b1-b4f7-330a74089a83",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1p3VZgiGQpnRIOI1YYS-v_QnTWDPjC9MQmEeqWEWI_UU",
+          "mode": "list",
+          "cachedResultName": "Real Estate",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1p3VZgiGQpnRIOI1YYS-v_QnTWDPjC9MQmEeqWEWI_UU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1p3VZgiGQpnRIOI1YYS-v_QnTWDPjC9MQmEeqWEWI_UU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Code in JavaScript').item.json.lead_name }}",
+            "Phone Number": "={{ $('Code in JavaScript').item.json.phone }}",
+            "Timeline": "={{ $('Code in JavaScript').item.json.timeline }}",
+            "Budget ": "={{ $('Code in JavaScript').item.json.budget }}",
+            "Status": "={{ $('Code in JavaScript').item.json.status }}",
+            " Location": "={{ $('Code in JavaScript').item.json.location }}",
+            "TImestamp": "={{ $('Code in JavaScript').item.json.timestamp }}"
+          },
+          "matchingColumns": [
+            "Phone Number"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TImestamp",
+              "displayName": "TImestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Budget ",
+              "displayName": "Budget ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": " Location",
+              "displayName": " Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Timeline",
+              "displayName": "Timeline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1152,
+        416
+      ],
+      "id": "087df1de-5bc0-4cd8-b84e-8a2f338dcf17",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "rtj9aWjVjGwuPjKf",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8080/message/sendText/client%201",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "2FD249CA8DF7-4E5C-94C3-12AC4A2A2EA0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Webhook').item.json.body.data.key.remoteJid }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('AI Agent').item.json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        784,
+        512
+      ],
+      "id": "01eb0fc9-007d-4b9e-8932-7b92f932fdbb",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=Session ID: {{ $('Webhook').item.json.body.data.key.remoteJid }}",
+        "contextWindowLength": 8
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        560,
+        256
+      ],
+      "id": "75778f9a-01c4-4ea7-901b-159c342895a0",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "9d723aba-7b52-407e-af35-5964c5e823ee",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7001edb7fd1912afcaa8832d834416df84c2fe7cfacc0eb8f80c8cf624d8078f"
+  },
+  "nodeGroups": [],
+  "id": "ywg2nu3YZzrtpR5u",
+  "tags": []
+}
